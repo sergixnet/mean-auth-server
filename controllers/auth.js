@@ -35,7 +35,7 @@ const crearUsuario = async (req, res = response) => {
       ok: true,
       uid: dbUser.id,
       name,
-      token
+      token,
     });
   } catch (error) {
     console.log(error);
@@ -44,27 +44,68 @@ const crearUsuario = async (req, res = response) => {
       msg: "Por favor hable con el administrador",
     });
   }
-
-  return res.json({
-    ok: true,
-    msg: "Crear usuario /new",
-  });
 };
 
-const loginUsuario = (req, res = response) => {
+const loginUsuario = async (req, res = response) => {
   const { email, password } = req.body;
-  console.log(email, password);
-  return res.json({
-    ok: true,
-    msg: "Login de usuario /",
-  });
+
+  try {
+    const dbUser = await Usuario.findOne({ email });
+
+    if (!dbUser) {
+      return res.status(400).json({
+        ok: false,
+        msg: "El correo no existe.",
+      });
+    }
+
+    // Confrimar si el password hace match
+    const validPassword = bcrypt.compareSync(password, dbUser.password);
+
+    if (!validPassword) {
+      return res.status(400).json({
+        ok: false,
+        msg: "Contraseña no válida.",
+      });
+    }
+
+    // Generar JWT
+    const token = await generarJWT(dbUser.id, dbUser.name);
+
+    // Respuesta del servicio
+    return res.json({
+      ok: true,
+      uid: dbUser.id,
+      name: dbUser.name,
+      token,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      ok: false,
+      msg: "Hable con el administrador",
+    });
+  }
 };
 
-const revalidarToken = (req, res) => {
-  return res.json({
-    ok: true,
-    msg: "Renew",
-  });
+const revalidarToken = async (req, res) => {
+  const { uid, name } = req;
+
+  try {
+    const token = await generarJWT(uid, name);
+    return res.json({
+      ok: true,
+      uid,
+      name,
+      token,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      ok: false,
+      msg: "Error renewing token",
+    });
+  }
 };
 
 module.exports = { crearUsuario, loginUsuario, revalidarToken };
