@@ -1,3 +1,4 @@
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const { dbConnection } = require("./db/config");
@@ -22,6 +23,11 @@ app.use(express.json());
 
 // Rutas
 app.use("/api/auth", require("./routes/auth"));
+
+// El resto de Rutas
+app.get("*", (req, res) => {
+  res.sendFile(path.resolve(__dirname, "public/index.html"));
+});
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto: ${PORT}`);
